@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Generador de URL</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #resultado { 
+            margin-top: 20px; 
+            padding: 15px; 
+            border: 1px solid #ccc; 
+            background-color: #f9f9f9;
+            word-wrap: break-word; /* Para URLs largas */
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Ejecutar Proceso de URL</h1>
+    
+    <button onclick="procesarURLDeBridge()">
+        Generar y Mostrar URL Final
+    </button>
+
+    <div id="resultado">
+        <p>Presiona el botón para iniciar la petición y generar la URL...</p>
+        <p><strong>Resultado:</strong> <span id="url-final">Esperando ejecución...</span></p>
+    </div>
+
+    <script>
+        async function procesarURLDeBridge() {
+            // Referencias al DOM para mostrar el resultado y el estado
+            const urlFinalSpan = document.getElementById('url-final');
+            urlFinalSpan.textContent = "Cargando...";
+
+            const URL_PETICION = 'https://www.itcratingservices.com/webservices/itcrateengineapi/api/CarrierBridges/be7833c2-9c83-4596-b03a-bae6e7fa0d13';
+            const URL_BASE_FINAL = 'https://customer.covercube.com/quote/RUFBQUFLL25NN3d4ZVFWZ3oxRDJ5dTgyUmNhdmxEb3ZGV0Flblh6Q0pkT1FVSSt6';
+            const SEPARADOR = '/bridge/';
+
+            try {
+                // 1. Petición GET
+                const response = await fetch(URL_PETICION);
+
+                if (!response.ok) {
+                    throw new Error(`Error en la petición: ${response.status} ${response.statusText}`);
+                }
+
+                // 2. Procesar respuesta
+                const data = await response.json();
+                
+                // *** AJUSTA ESTA LÍNEA ***: Reemplaza 'urlRecibida' con la propiedad real de tu JSON.
+                const urlRecibida = data.urlRecibida; 
+                
+                if (!urlRecibida) {
+                     throw new Error("La propiedad 'urlRecibida' no se encontró en la respuesta.");
+                }
+
+                // 3. Cortar la porción
+                const indiceBridge = urlRecibida.indexOf(SEPARADOR);
+
+                if (indiceBridge === -1) {
+                    throw new Error(`No se encontró la cadena "${SEPARADOR}" en la URL recibida.`);
+                }
+
+                const porcionCortada = urlRecibida.substring(indiceBridge);
+                
+                // 4. Crear la URL final
+                const URL_FINAL = `${URL_BASE_FINAL}${porcionCortada}`;
+                
+                // 5. Mostrar el resultado
+                urlFinalSpan.textContent = URL_FINAL;
+                
+                // Opcional: imprimir en consola para depuración
+                console.log("URL Final:", URL_FINAL);
+                return URL_FINAL;
+
+            } catch (error) {
+                const mensajeError = `❌ ERROR: ${error.message}. Revisa la consola (F12) para más detalles.`;
+                urlFinalSpan.textContent = mensajeError;
+                console.error("Detalle del error:", error);
+                return null;
+            }
+        }
+    </script>
+</body>
+</html>
