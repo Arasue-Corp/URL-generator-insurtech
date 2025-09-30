@@ -2,90 +2,174 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Generador de URL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador y Ejecutor de URL</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        #resultado { 
-            margin-top: 20px; 
-            padding: 15px; 
-            border: 1px solid #ccc; 
-            background-color: #f9f9f9;
-            word-wrap: break-word; /* Para URLs largas */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .botones {
+            margin-bottom: 20px;
         }
         button {
-            padding: 10px 15px;
+            padding: 12px 20px;
             font-size: 16px;
             cursor: pointer;
+            margin-right: 10px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        #boton-generar {
+            background-color: #007bff; /* Azul */
+        }
+        #boton-generar:hover {
+            background-color: #0056b3;
+        }
+        #boton-ejecutar {
+            background-color: #28a745; /* Verde */
+        }
+        #boton-ejecutar:hover {
+            background-color: #1e7e34;
+        }
+        button:disabled {
+            background-color: #6c757d; /* Gris */
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        #resultado {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            word-wrap: break-word;
+            border-radius: 5px;
+        }
+        .status-error {
+            color: #d9534f; /* Rojo para errores */
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
-    <h1>Ejecutar Proceso de URL</h1>
-    
-    <button onclick="procesarURLDeBridge()">
-        Generar y Mostrar URL Final
-    </button>
+    <div class="container">
+        <h1>Generador y Ejecutor de Bridge URL</h1>
 
-    <div id="resultado">
-        <p>Presiona el botón para iniciar la petición y generar la URL...</p>
-        <p><strong>Resultado:</strong> <span id="url-final">Esperando ejecución...</span></p>
+        <div class="botones">
+            <button id="boton-generar">
+                1. Generar URL Final ⚙️
+            </button>
+            <button id="boton-ejecutar" disabled>
+                2. Ejecutar URL Nueva 🚀
+            </button>
+        </div>
+
+        <div id="resultado">
+            <p>Presiona el primer botón para generar la URL. Luego, el segundo botón se activará para ejecutarla.</p>
+            <p><strong>URL Generada:</strong> <span id="url-final">Esperando generación...</span></p>
+        </div>
     </div>
 
     <script>
-        async function procesarURLDeBridge() {
-            // Referencias al DOM para mostrar el resultado y el estado
-            const urlFinalSpan = document.getElementById('url-final');
-            urlFinalSpan.textContent = "Cargando...";
+        // Seleccionar elementos del DOM una sola vez para mejorar el rendimiento
+        const generateBtn = document.getElementById('boton-generar');
+        const executeBtn = document.getElementById('boton-ejecutar');
+        const urlFinalSpan = document.getElementById('url-final');
 
-            const URL_PETICION = 'https://www.itcratingservices.com/webservices/itcrateengineapi/api/CarrierBridges/be7833c2-9c83-4596-b03a-bae6e7fa0d13';
-            const URL_BASE_FINAL = 'https://customer.covercube.com/quote/RUFBQUFLL25NN3d4ZVFWZ3oxRDJ5dTgyUmNhdmxEb3ZGV0Flblh6Q0pkT1FVSSt6';
-            const SEPARADOR = '/bridge/';
+        // Variable para almacenar la URL final. No es necesario que sea global al objeto window.
+        let generatedUrl = '';
+
+        /**
+         * Actualiza la interfaz de usuario (el botón y el texto de estado).
+         * @param {string} message - El mensaje a mostrar.
+         * @param {boolean} isLoading - Si es true, deshabilita ambos botones.
+         * @param {boolean} isError - Si es true, aplica el estilo de error.
+         */
+        function updateUI(message, { isLoading = false, isError = false } = {}) {
+            urlFinalSpan.textContent = message;
+            urlFinalSpan.className = isError ? 'status-error' : '';
+            
+            generateBtn.disabled = isLoading;
+            // El botón de ejecutar solo se habilita si no hay carga y no hay error.
+            executeBtn.disabled = isLoading || isError || !generatedUrl;
+        }
+
+        /**
+         * Procesa la petición a la API, construye la URL final y actualiza la UI.
+         */
+        async function processBridgeUrl() {
+            generatedUrl = ''; // Reiniciar la URL en cada intento
+            updateUI("Cargando...", { isLoading: true });
+            
+            // --- Configuración ---
+            const API_URL = 'https://www.itcratingservices.com/webservices/itcrateengineapi/api/CarrierBridges/be7833c2-9c83-4596-b03a-bae6e7fa0d13';
+            const FINAL_BASE_URL = 'https://customer.covercube.com/quote/RUFBQUFLL25NN3d4ZVFWZ3oxRDJ5dTgyUmNhdmxEb3ZGV0Flblh6Q0pkT1FVSSt6';
+            const SEPARATOR = '/bridge/';
+            // ---------------------
 
             try {
-                // 1. Petición GET
-                const response = await fetch(URL_PETICION);
-
+                // 1. Petición GET a la API
+                const response = await fetch(API_URL);
                 if (!response.ok) {
-                    throw new Error(`Error en la petición: ${response.status} ${response.statusText}`);
+                    throw new Error(`Error de red: ${response.status} ${response.statusText}`);
                 }
 
-                // 2. Procesar respuesta
+                // 2. Procesar la respuesta JSON
                 const data = await response.json();
                 
-                // *** AJUSTA ESTA LÍNEA ***: Reemplaza 'urlRecibida' con la propiedad real de tu JSON.
-                const urlRecibida = data.urlRecibida; 
-                
-                if (!urlRecibida) {
-                     throw new Error("La propiedad 'urlRecibida' no se encontró en la respuesta.");
+                // Intenta obtener la URL desde la respuesta. AJUSTA LAS PROPIEDADES SI ES NECESARIO.
+                const receivedUrl = data.bridgeUrl || data.url || data.URL;
+                if (!receivedUrl || typeof receivedUrl !== 'string') {
+                    throw new Error("La propiedad con la URL no se encontró en la respuesta JSON.");
                 }
 
-                // 3. Cortar la porción
-                const indiceBridge = urlRecibida.indexOf(SEPARADOR);
-
-                if (indiceBridge === -1) {
-                    throw new Error(`No se encontró la cadena "${SEPARADOR}" en la URL recibida.`);
+                // 3. Cortar y construir la URL final
+                const separatorIndex = receivedUrl.indexOf(SEPARATOR);
+                if (separatorIndex === -1) {
+                    throw new Error(`El separador "${SEPARATOR}" no se encontró en la URL recibida.`);
                 }
+                const cutPortion = receivedUrl.substring(separatorIndex);
 
-                const porcionCortada = urlRecibida.substring(indiceBridge);
-                
-                // 4. Crear la URL final
-                const URL_FINAL = `${URL_BASE_FINAL}${porcionCortada}`;
-                
-                // 5. Mostrar el resultado
-                urlFinalSpan.textContent = URL_FINAL;
-                
-                // Opcional: imprimir en consola para depuración
-                console.log("URL Final:", URL_FINAL);
-                return URL_FINAL;
+                // 4. Almacenar y mostrar el resultado
+                generatedUrl = `${FINAL_BASE_URL}${cutPortion}`;
+                updateUI(generatedUrl, { isLoading: false });
 
             } catch (error) {
-                const mensajeError = `❌ ERROR: ${error.message}. Revisa la consola (F12) para más detalles.`;
-                urlFinalSpan.textContent = mensajeError;
+                // Manejo centralizado de cualquier error ocurrido en el `try`
                 console.error("Detalle del error:", error);
-                return null;
+                const friendlyMessage = `❌ ERROR: ${error.message}. Revisa la consola (F12) para más detalles.`;
+                updateUI(friendlyMessage, { isLoading: false, isError: true });
             }
         }
+
+        /**
+         * Abre la URL generada en una nueva pestaña.
+         */
+        function executeFinalUrl() {
+            if (generatedUrl) {
+                window.open(generatedUrl, '_blank');
+            } else {
+                alert("Primero debes generar una URL válida.");
+            }
+        }
+        
+        // Asignar los eventos a los botones
+        generateBtn.addEventListener('click', processBridgeUrl);
+        executeBtn.addEventListener('click', executeFinalUrl);
+
     </script>
 </body>
 </html>
