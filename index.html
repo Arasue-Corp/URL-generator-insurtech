@@ -129,6 +129,8 @@
 
                 // 2. Procesar la respuesta JSON
                 const data = await response.json();
+
+                console.log('Respuesta recibida del proxy:', data);
                 
                 // Intenta obtener la URL desde la respuesta. AJUSTA LAS PROPIEDADES SI ES NECESARIO.
                 const receivedUrl = data.bridgeUrl || data.url || data.URL;
@@ -173,5 +175,6 @@
     </script>
 </body>
 </html>
+
 
 
